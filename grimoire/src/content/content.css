@@ -1,0 +1,369 @@
+/* ── Sidebar ─────────────────────────────────────────────────────────── */
+
+#gr-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: #0f0e17;
+  color: #e8e6d9;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  line-height: 1.75;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(175, 169, 236, 0.2);
+  animation: gr-slide-in 0.25s ease;
+  overflow: hidden;
+}
+
+#gr-sidebar.gr-sidebar-closing {
+  animation: gr-slide-out 0.25s ease forwards;
+}
+
+@keyframes gr-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes gr-slide-out {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.gr-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.gr-sidebar-title {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  color: #afa9ec;
+}
+
+.gr-sidebar-close {
+  background: none;
+  border: none;
+  color: #534ab7;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color .15s;
+}
+
+.gr-sidebar-close:hover {
+  color: #afa9ec;
+}
+
+/* ── Body ─────────────────────────────────────────────────────────────── */
+
+.gr-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(83, 74, 183, 0.4) transparent;
+}
+
+.gr-lore-text {
+  font-style: italic;
+  color: #d4cfb8;
+}
+
+.gr-lore-text p {
+  margin: 0 0 14px;
+}
+
+.gr-lore-text p:last-child {
+  margin-bottom: 0;
+}
+
+.gr-error {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  color: #e24b4a;
+  background: rgba(226, 75, 74, 0.08);
+  border: 1px solid rgba(226, 75, 74, 0.2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+
+/* ── Loading animasyonu ───────────────────────────────────────────────── */
+
+.gr-loading {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.gr-loading-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #534ab7;
+  animation: gr-pulse 1.2s ease-in-out infinite;
+}
+
+.gr-loading-dot:nth-child(2) { animation-delay: .2s; }
+.gr-loading-dot:nth-child(3) { animation-delay: .4s; }
+
+@keyframes gr-pulse {
+  0%, 100% { opacity: .3; transform: scale(.8); }
+  50%       { opacity: 1;  transform: scale(1.1); }
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+.gr-sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.gr-save-btn {
+  width: 100%;
+  padding: 10px 0;
+  background: #534ab7;
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+  margin-bottom: 6px;
+}
+
+.gr-save-btn:hover  { background: #7f77dd; }
+.gr-save-btn:disabled { background: #2c2a4a; color: #534ab7; cursor: default; }
+
+.gr-xp-preview {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  color: #534ab7;
+  text-align: center;
+}
+
+/* ── Canavar saldırı overlay ──────────────────────────────────────────── */
+
+#gr-monster {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 28px;
+  z-index: 2147483646;
+  pointer-events: none;
+  animation: gr-monster-in .3s ease;
+}
+
+#gr-monster.gr-monster-leaving {
+  animation: gr-monster-out .3s ease forwards;
+}
+
+@keyframes gr-monster-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes gr-monster-out {
+  to { opacity: 0; transform: translateY(20px); }
+}
+
+.gr-monster-inner {
+  background: #0f0e17;
+  border: 1.5px solid #e24b4a;
+  border-radius: 14px;
+  padding: 20px 22px;
+  max-width: 380px;
+  width: 90%;
+  pointer-events: all;
+  font-family: Georgia, serif;
+}
+
+.gr-monster-eyebrow {
+  font-family: -apple-system, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: #e24b4a;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.gr-monster-name {
+  font-size: 17px;
+  font-weight: 500;
+  color: #f0d0d0;
+  margin-bottom: 10px;
+}
+
+.gr-monster-msg {
+  font-size: 13px;
+  color: #c0b8a8;
+  line-height: 1.65;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.gr-monster-xp {
+  display: flex;
+  justify-content: space-between;
+  font-family: -apple-system, sans-serif;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.gr-xp-lost      { color: #e24b4a; font-weight: 500; }
+.gr-xp-remaining { color: #888780; }
+
+.gr-monster-hp-wrap {
+  height: 4px;
+  background: rgba(226, 75, 74, .15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.gr-monster-hp-bar {
+  height: 100%;
+  background: #e24b4a;
+  border-radius: 2px;
+  width: 0;
+  transition: width .8s ease;
+}
+
+.gr-monster-dismiss {
+  width: 100%;
+  padding: 9px 0;
+  background: none;
+  border: 1px solid rgba(226, 75, 74, .4);
+  border-radius: 7px;
+  color: #f09595;
+  font-family: -apple-system, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.gr-monster-dismiss:hover {
+  background: rgba(226, 75, 74, .08);
+}
+
+/* ── Haftalık Boss overlay ────────────────────────────────────────────── */
+
+#gr-boss {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483647;
+  animation: gr-monster-in .3s ease;
+}
+
+#gr-boss.gr-monster-leaving {
+  animation: gr-monster-out .3s ease forwards;
+}
+
+.gr-boss-inner {
+  background: #0f0e17;
+  border: 1.5px solid #7f77dd;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  max-width: 420px;
+  width: 90%;
+  font-family: Georgia, serif;
+  text-align: center;
+}
+
+.gr-boss-label {
+  font-family: -apple-system, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  color: #534ab7;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.gr-boss-name {
+  font-size: 22px;
+  color: #afa9ec;
+  margin-bottom: 12px;
+}
+
+.gr-boss-stats {
+  font-size: 13px;
+  color: #888780;
+  font-family: -apple-system, sans-serif;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.gr-boss-hp-track {
+  height: 8px;
+  background: rgba(83, 74, 183, .15);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.gr-boss-hp-fill {
+  height: 100%;
+  background: #7f77dd;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+.gr-boss-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.gr-boss-fight {
+  flex: 1;
+  padding: 10px 0;
+  background: #534ab7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: -apple-system, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gr-boss-flee {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  color: #888780;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  font-family: -apple-system, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.gr-boss-result  { margin-top: 14px; font-family: -apple-system, sans-serif; font-size: 13px; line-height: 1.6; }
+.gr-boss-win     { color: #1d9e75; }
+.gr-boss-loss    { color: #e24b4a; }
