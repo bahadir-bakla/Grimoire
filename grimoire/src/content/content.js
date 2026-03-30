@@ -28,6 +28,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ ok: true })
   }
 
+  if (msg.type === 'QUIZ_TIME') {
+    handleMemoryPalaceQuiz(msg.quiz)
+    sendResponse({ ok: true })
+  }
+
   return true
 })
 
@@ -226,7 +231,7 @@ function createSidebar() {
     <div class="gr-sidebar-footer" id="gr-footer" style="display:none">
       <div style="display:flex; gap:8px; margin-bottom:8px;">
         <button class="gr-save-btn" id="gr-save" style="flex:1">${t('content.saveGrimoire', UI_LANG)}</button>
-        <button id="gr-mode-toggle" style="flex:1; background:rgba(83,74,183,.2); border:1px solid rgba(83,74,183,.4); color:#afa9ec; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer;" title="Hikaye ve Resmi Özet arasında geçiş yap">
+        <button id="gr-mode-toggle" style="flex:1; background:rgba(83,74,183,.2); border:1px solid rgba(83,74,183,.4); color:#afa9ec; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer;" title="${t('content.toggleTitle', UI_LANG)}">
           ${t('content.switchToFormal', UI_LANG)}
         </button>
       </div>
@@ -262,7 +267,7 @@ function showLore(loreText, xpPreview) {
     .join('')
 
   document.getElementById('gr-footer').style.display = 'block'
-  document.getElementById('gr-xp-preview').textContent = `+${xpPreview} XP kazanacaksın`
+  document.getElementById('gr-xp-preview').textContent = `+${xpPreview} ${t('content.xpPreview', UI_LANG)}`
 }
 
 function showError(message) {
@@ -302,9 +307,10 @@ async function transformCurrentPage() {
   const isDistraction = DISTRACTION_DOMAINS.some(d => url.includes(d))
   if (isDistraction) return
 
-  const { session } = await chrome.storage.local.get(['session'])
+  const { session, settings } = await chrome.storage.local.get(['session', 'settings'])
   if (!session?.isActive) return
 
+  UI_LANG = settings?.appLanguage || 'tr'
   window.grCurrentMode = session.mode || 'lore'
   currentPageTitle = document.title.slice(0, 80)
   createSidebar()
@@ -543,11 +549,84 @@ function showLevelUpBanner(newLevel) {
     color: #e8e6d9;
     animation: gr-level-pop .4s ease;
   `
+  const levelLabel  = UI_LANG === 'en' ? `Level ${newLevel}` : `Seviye ${newLevel}`
+  const subLabel    = UI_LANG === 'en' ? 'A new floor has opened.' : 'Yeni bir kat açıldı.'
   banner.innerHTML = `
-    <div style="font-size:13px;color:#afa9ec;letter-spacing:.1em;margin-bottom:8px">GRİMOİR</div>
-    <div style="font-size:28px;font-weight:500;color:#7f77dd;margin-bottom:4px">Seviye ${newLevel}</div>
-    <div style="font-size:14px;color:#888780">Yeni bir kat açıldı.</div>
+    <div style="font-size:13px;color:#afa9ec;letter-spacing:.1em;margin-bottom:8px">GRIMOIRE</div>
+    <div style="font-size:28px;font-weight:500;color:#7f77dd;margin-bottom:4px">${levelLabel}</div>
+    <div style="font-size:14px;color:#888780">${subLabel}</div>
   `
   document.body.appendChild(banner)
   setTimeout(() => banner.remove(), 3000)
+}
+
+// ─── Memory Palace Quiz UI ────────────────────────────────────────────────
+
+function handleMemoryPalaceQuiz(quiz) {
+  document.getElementById('gr-quiz')?.remove()
+
+  const { questions, articleTitle, id: quizId } = quiz
+
+  // 3 sorudan rastgele 1 seç
+  const q = questions[Math.floor(Math.random() * questions.length)]
+  if (!q) return
+
+  const palaceLabel = t('quiz.palace', UI_LANG)
+  const skipLabel   = t('quiz.skip',   UI_LANG)
+
+  const overlay = document.createElement('div')
+  overlay.id = 'gr-quiz'
+  overlay.innerHTML = `
+    <div class="gr-quiz-inner">
+      <div class="gr-quiz-eyebrow">🏛️ ${palaceLabel}</div>
+      <div class="gr-quiz-source">"${articleTitle}"</div>
+      <div class="gr-quiz-question">${q.q}</div>
+      <div class="gr-quiz-options" id="gr-quiz-opts">
+        ${q.options.map((opt, i) => `
+          <button class="gr-quiz-opt" data-idx="${i}">${opt}</button>
+        `).join('')}
+      </div>
+      <div class="gr-quiz-result" id="gr-quiz-result" style="display:none"></div>
+      <button class="gr-quiz-skip" id="gr-quiz-skip">${skipLabel}</button>
+    </div>
+  `
+
+  document.body.appendChild(overlay)
+
+  // Cevap seçme
+  overlay.querySelectorAll('.gr-quiz-opt').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const chosen  = parseInt(btn.dataset.idx)
+      const correct = chosen === q.correct
+
+      overlay.querySelectorAll('.gr-quiz-opt').forEach(b => { b.disabled = true })
+      btn.classList.add(correct ? 'gr-quiz-correct' : 'gr-quiz-wrong')
+      if (!correct) {
+        overlay.querySelector(`[data-idx="${q.correct}"]`)?.classList.add('gr-quiz-correct')
+      }
+
+      const resultEl = overlay.querySelector('#gr-quiz-result')
+      resultEl.style.display = 'block'
+      resultEl.innerHTML = correct
+        ? `<span class="gr-quiz-win">+75 XP — ${t('quiz.correct', UI_LANG)}</span>
+           <br><small style="color:#888780;font-size:11px">${q.explanation}</small>`
+        : `<span class="gr-quiz-loss">${t('quiz.wrong', UI_LANG)}</span>
+           <br><small style="color:#888780;font-size:11px">${q.explanation}</small>`
+
+      // Servise gönder
+      chrome.runtime.sendMessage({ type: 'QUIZ_RESULT', quizId, correct })
+
+      // Kapat
+      setTimeout(() => {
+        overlay.classList.add('gr-monster-leaving')
+        setTimeout(() => overlay.remove(), 300)
+      }, 3500)
+    })
+  })
+
+  // Geç
+  overlay.querySelector('#gr-quiz-skip').addEventListener('click', () => {
+    overlay.classList.add('gr-monster-leaving')
+    setTimeout(() => overlay.remove(), 300)
+  })
 }

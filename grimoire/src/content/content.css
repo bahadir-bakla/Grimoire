@@ -367,3 +367,130 @@
 .gr-boss-result  { margin-top: 14px; font-family: -apple-system, sans-serif; font-size: 13px; line-height: 1.6; }
 .gr-boss-win     { color: #1d9e75; }
 .gr-boss-loss    { color: #e24b4a; }
+
+/* ── Memory Palace Quiz ──────────────────────────────────────────────────── */
+
+#gr-quiz {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: 2147483647;
+  background: rgba(15, 14, 23, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: gr-monster-fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gr-quiz-inner {
+  width: 400px;
+  background: #16161a;
+  border: 1px solid rgba(83, 74, 183, 0.3);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 40px rgba(83, 74, 183, 0.15);
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.gr-quiz-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #534ab7;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.gr-quiz-source {
+  font-size: 13px;
+  color: #888780;
+  font-style: italic;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.gr-quiz-question {
+  font-size: 18px;
+  line-height: 1.5;
+  color: #fffffe;
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+
+.gr-quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gr-quiz-opt {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 18px;
+  color: #a7a9be;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.gr-quiz-opt:hover:not(:disabled) {
+  background: rgba(83, 74, 183, 0.1);
+  border-color: rgba(83, 74, 183, 0.4);
+  color: #fffffe;
+  transform: translateX(4px);
+}
+
+.gr-quiz-opt:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.gr-quiz-correct {
+  background: rgba(29, 158, 117, 0.15) !important;
+  border-color: #1d9e75 !important;
+  color: #1d9e75 !important;
+  opacity: 1 !important;
+}
+
+.gr-quiz-wrong {
+  background: rgba(226, 75, 74, 0.15) !important;
+  border-color: #e24b4a !important;
+  color: #e24b4a !important;
+  opacity: 1 !important;
+  animation: gr-shake 0.4s ease;
+}
+
+.gr-quiz-result {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  animation: gr-monster-fade-in 0.3s ease;
+}
+
+.gr-quiz-win { color: #1d9e75; font-weight: 600; font-size: 15px; }
+.gr-quiz-loss { color: #e24b4a; font-weight: 600; font-size: 15px; }
+
+.gr-quiz-skip {
+  background: none;
+  border: none;
+  color: #888780;
+  font-size: 12px;
+  margin-top: 24px;
+  cursor: pointer;
+  text-decoration: underline;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.gr-quiz-skip:hover { opacity: 1; }
+
+@keyframes gr-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}

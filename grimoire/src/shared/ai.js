@@ -1,4 +1,4 @@
-// Grimoire — AI Katmanı
+// Grimoire — AI Katmanı  (v2.0.0 — Living World + Memory Palace)
 import { LORE_STYLES, AI_PROVIDERS } from './constants.js'
 
 /**
@@ -179,4 +179,92 @@ async function runGeminiAPI(text, systemPrompt, apiKey, providerDef, settings) {
   const content = data?.candidates?.[0]?.content?.parts?.[0]?.text
   if (!content) throw new Error('Gemini boş yanıt döndürdü.')
   return content.trim()
+}
+
+// ─── Shared internal provider caller ─────────────────────────────────────────
+// transformToLore'un aksine bu helper doğrudan çağrılabilir ve sistem içi
+// World + Quiz işlemlerinde kullanılır.
+
+async function callProvider(systemPrompt, userContent) {
+  const { settings } = await chrome.storage.local.get(['settings'])
+  const providerId = settings?.aiProvider ?? 'chrome'
+  const apiKey     = settings?.apiKey ?? ''
+
+  if (providerId === 'chrome') return runChromeAI(userContent, systemPrompt)
+
+  if (!apiKey || apiKey.trim() === '') {
+    throw new Error('API Key girilmemiş. Lütfen Ayarlar\'dan bir Cloud provider seçin.')
+  }
+
+  const providerDef = AI_PROVIDERS[providerId]
+  if (!providerDef) throw new Error('Geçersiz AI Provider.')
+
+  if (providerId === 'anthropic') return runAnthropic(userContent, systemPrompt, apiKey, providerDef, settings)
+  if (providerId === 'gemini')    return runGeminiAPI(userContent, systemPrompt, apiKey, providerDef, settings)
+  return runOpenAICompat(userContent, systemPrompt, apiKey, providerDef, settings)
+}
+
+// ─── Living World ─────────────────────────────────────────────────────────────
+
+/**
+ * Bir lore metninden fantasy dünya entitesi çıkarır.
+ * Mevcut dünya varlıklarına bakarak bağlantı kurmaya çalışır.
+ */
+export async function extractWorldEntry(loreText, existingEntries = []) {
+  const worldContext = existingEntries.slice(0, 8)
+    .map(e => `- "${e.title}" (${e.type}): ${e.summary}`)
+    .join('\n')
+
+  const systemPrompt = `You are a fantasy world builder. A lore text will be given to you.
+Your task: extract one world entity from it and integrate it with the existing world.
+
+EXISTING WORLD ENTITIES:
+${worldContext || 'The world is empty — you are building it from scratch.'}
+
+Reply with ONLY valid JSON (absolutely no extra text before or after):
+{"title":"Fantasy name for this entity","type":"place|event|character|era|artifact","realm":"Region or era this belongs to","themes":["theme1","theme2"],"summary":"2-3 sentences. If the existing world has related entities, reference them."}`
+
+  const raw = await callProvider(systemPrompt, loreText.slice(0, 800))
+  const match = raw.match(/\{[\s\S]*\}/)
+  if (!match) throw new Error('World entry JSON parse failed')
+  return JSON.parse(match[0])
+}
+
+/**
+ * Tüm dünya varlıklarını epik bir kronik anlatıya dönüştürür.
+ */
+export async function generateWorldChronicle(entries, lang = 'tr') {
+  const entrySummaries = entries
+    .map(e => `[${e.type.toUpperCase()}] "${e.title}" (${e.realm}) — ${e.summary}`)
+    .join('\n\n')
+
+  const systemPrompt = lang === 'en'
+    ? `You are a legendary chronicle writer. Weave all the world entities below into one cohesive, epic narrative.
+Write as flowing prose — not a list. Build causal connections between entities. Where possible, show how events influenced each other.
+3-5 paragraphs, 400-600 words. Write entirely in English.`
+    : `Sen efsanevi bir kronik yazarısın. Aşağıdaki tüm dünya varlıklarını tek, tutarlı ve epik bir anlatıda birleştir.
+Akıcı bir düzyazı olarak yaz — liste değil, hikaye. Varlıklar arasında nedensellik bağları kur. Olayların birbirini nasıl etkilediğini göster.
+3-5 paragraf, 400-600 kelime. Tamamen Türkçe yaz.`
+
+  return await callProvider(systemPrompt, entrySummaries)
+}
+
+// ─── Memory Palace ────────────────────────────────────────────────────────────
+
+/**
+ * Bir lore metninden 3 çoktan seçmeli quiz sorusu üretir.
+ */
+export async function generateQuizQuestions(loreText, lang = 'tr') {
+  const systemPrompt = lang === 'en'
+    ? `You are a quiz master. Based on the lore text, generate exactly 3 multiple-choice questions that test understanding of the core ideas.
+Return ONLY a valid JSON array — no extra text, no markdown, no explanation outside the JSON:
+[{"q":"Question?","options":["Option A","Option B","Option C","Option D"],"correct":0,"explanation":"Why this answer is correct"}]`
+    : `Sen bir bilgi yarışması ustasısın. Aşağıdaki lore metninden tam olarak 3 çoktan seçmeli soru üret. Temel fikirleri test et.
+SADECE geçerli JSON array döndür — JSON dışında hiçbir şey yazma, markdown kullanma:
+[{"q":"Soru?","options":["Seçenek A","Seçenek B","Seçenek C","Seçenek D"],"correct":0,"explanation":"Bu cevabın doğru olmasının nedeni"}]`
+
+  const raw = await callProvider(systemPrompt, loreText.slice(0, 1000))
+  const match = raw.match(/\[[\s\S]*\]/)
+  if (!match) throw new Error('Quiz JSON parse failed')
+  return JSON.parse(match[0])
 }

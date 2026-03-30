@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
-import SessionControl from './components/SessionControl.jsx'
-import CharacterCard  from './components/CharacterCard.jsx'
-import GrimoireList   from './components/GrimoireList.jsx'
-import Settings       from './components/Settings.jsx'
-import { t }          from '../shared/i18n.js'
+import SessionControl   from './components/SessionControl.jsx'
+import CharacterCard    from './components/CharacterCard.jsx'
+import GrimoireList     from './components/GrimoireList.jsx'
+import WorldChronicle   from './components/WorldChronicle.jsx'
+import Settings         from './components/Settings.jsx'
+import { t }            from '../shared/i18n.js'
 
 const TABS = [
-  { id: 'seans',   label: 'Seans' },
-  { id: 'grimoire', label: 'Grimoire' },
-  { id: 'ayarlar', label: 'Ayarlar' },
+  { id: 'seans',    label: 'Seans'   },
+  { id: 'grimoire', label: 'Grimoire'},
+  { id: 'dunya',    label: 'Dünya'   },
+  { id: 'ayarlar',  label: 'Ayarlar' },
 ]
 
 export default function App() {
@@ -26,7 +28,7 @@ export default function App() {
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: 480,
+      height: 560,
     }}>
 
       {/* Header */}
@@ -90,7 +92,9 @@ export default function App() {
 
         {activeTab === 'grimoire' && <GrimoireList lang={lang} />}
 
-        {activeTab === 'ayarlar' && <Settings lang={lang} />}
+        {activeTab === 'dunya'    && <WorldChronicle lang={lang} />}
+
+        {activeTab === 'ayarlar'  && <Settings lang={lang} />}
       </div>
 
     </div>

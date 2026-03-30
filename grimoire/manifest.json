@@ -1,18 +1,30 @@
 {
   "manifest_version": 3,
   "name": "Grimoire",
-  "version": "1.0.0",
-  "description": "Okuduğun şey büyüye dönüşür. Dikkatini kaybedersen canavar gelir. Çalışma seanslarını dungeon'a, okuduklarını grimoire'a dönüştür.",
+  "version": "2.0.0",
+  "description": "Transform reading into RPG lore and summaries! Earn XP, level up focus, and slay distraction monsters with multi-AI support.",
   "permissions": [
     "storage",
     "tabs",
     "activeTab",
-    "scripting",
-    "alarms",
-    "aiLanguageModelOriginTrial"
+    "alarms"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "*://*.twitter.com/*",
+    "*://*.x.com/*",
+    "*://*.instagram.com/*",
+    "*://*.tiktok.com/*",
+    "*://*.reddit.com/*",
+    "*://*.youtube.com/*",
+    "*://*.facebook.com/*",
+    "*://*.twitch.tv/*",
+    "*://*.netflix.com/*",
+    "*://*.discord.com/*",
+    "*://*.telegram.org/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://api.x.ai/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
     "service_worker": "src/background/service-worker.js",
@@ -20,9 +32,25 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/content.js"],
-      "css": ["src/content/content.css"],
+      "matches": [
+        "*://*.twitter.com/*",
+        "*://*.x.com/*",
+        "*://*.instagram.com/*",
+        "*://*.tiktok.com/*",
+        "*://*.reddit.com/*",
+        "*://*.youtube.com/*",
+        "*://*.facebook.com/*",
+        "*://*.twitch.tv/*",
+        "*://*.netflix.com/*",
+        "*://*.discord.com/*",
+        "*://*.telegram.org/*"
+      ],
+      "js": [
+        "src/content/content.js"
+      ],
+      "css": [
+        "src/content/content.css"
+      ],
       "run_at": "document_idle",
       "exclude_matches": [
         "https://chrome.google.com/webstore/*",

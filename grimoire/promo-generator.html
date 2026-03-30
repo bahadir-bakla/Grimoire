@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Grimoire Promo Generator</title>
+  <style>
+    body { background: #0f0e17; color: white; font-family: sans-serif; text-align: center; padding: 40px; margin: 0; }
+    h2 { color: #afa9ec; font-weight: 400; letter-spacing: 2px; }
+    canvas { 
+      border: 1px solid rgba(175, 169, 236, 0.2); 
+      margin: 20px; 
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+    }
+    button { 
+      padding: 14px 28px; 
+      font-size: 16px; 
+      cursor: pointer; 
+      background: linear-gradient(135deg, #7f77dd, #534ab7); 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      font-weight: bold;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(127, 119, 221, 0.4);
+    }
+    .note { color: #888780; font-size: 14px; margin-bottom: 30px; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h2>GRIMOIRE PROMO STUDIO 🪄</h2>
+  <div class="note">Bu sayfa, Google Chrome Web Store'un istediği "sıfır kayıplı (lossless)" ve "tam piksel" afişleri tarayıcında anında çizer.</div>
+  
+  <button onclick="downloadAll()">✨ Mükemmel Kalitede (PNG) Olarak İndir</button>
+  <br><br>
+  
+  <canvas id="smallPromo" width="440" height="280"></canvas>
+  <br>
+  <canvas id="marqueePromo" width="1400" height="560"></canvas>
+
+  <script>
+    function drawTile(canvasId, width, height, titleSize, subtitleSize) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+
+      // Arkaplan Gradient
+      const grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, '#0f0e17');
+      grad.addColorStop(0.5, '#201d47');  // Grimoire Moru (Dark)
+      grad.addColorStop(1, '#0f0e17');
+      
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Biraz gürültü/yıldız efekti (Magic Vibe)
+      for(let i=0; i< (width*height/2000); i++) {
+        ctx.fillStyle = `rgba(175, 169, 236, ${Math.random() * 0.5})`;
+        ctx.beginPath();
+        const size = Math.random() > 0.9 ? Math.random() * 2 : Math.random() * 1;
+        ctx.arc(Math.random()*width, Math.random()*height, size, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // GRIMOIRE Yazısı
+      ctx.fillStyle = '#e8e6d9';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `600 ${titleSize}px 'Cinzel', serif`;
+      
+      // Yazı Gölgelendirmesi (Glow Efekti)
+      ctx.shadowColor = '#afa9ec';
+      ctx.shadowBlur = 25;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      
+      ctx.fillText('GRIMOIRE', width/2, height/2 - (height*0.05));
+
+      // Alt Başlık (Subtitle)
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = '#afa9ec';
+      ctx.font = `500 ${subtitleSize}px 'Inter', sans-serif`;
+      ctx.letterSpacing = "2px";
+      ctx.fillText('GAMIFIED AI READING ASSISTANT', width/2, height/2 + titleSize/1.2);
+    }
+
+    // Fontların net yüklenmesi için bekleyip çiziyoruz
+    window.onload = () => {
+      document.fonts.ready.then(() => {
+        drawTile('smallPromo', 440, 280, 50, 13);
+        drawTile('marqueePromo', 1400, 560, 160, 32);
+      });
+    }
+
+    function downloadAll() {
+      const s = document.getElementById('smallPromo').toDataURL('image/png', 1.0);
+      const m = document.getElementById('marqueePromo').toDataURL('image/png', 1.0);
+      
+      const link1 = document.createElement('a');
+      link1.download = 'Grimoire_Small_Promo_440x280.png';
+      link1.href = s;
+      link1.click();
+
+      setTimeout(() => {
+        const link2 = document.createElement('a');
+        link2.download = 'Grimoire_Marquee_1400x560.png';
+        link2.href = m;
+        link2.click();
+      }, 500);
+    }
+  </script>
+</body>
+</html>

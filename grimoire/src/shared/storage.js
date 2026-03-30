@@ -1,14 +1,14 @@
 import { STORAGE_KEYS } from './constants.js'
 
 export const STORAGE_DEFAULTS = {
-  [STORAGE_KEYS.SESSION]: null,
-  [STORAGE_KEYS.CHARACTER]: {
+  [STORAGE_KEYS.SESSION]:    null,
+  [STORAGE_KEYS.CHARACTER]:  {
     level: 1,
     xp: 0,
     xpToNext: 500,
   },
-  [STORAGE_KEYS.GRIMOIRE]: [],
-  [STORAGE_KEYS.SETTINGS]: {
+  [STORAGE_KEYS.GRIMOIRE]:   [],
+  [STORAGE_KEYS.SETTINGS]:   {
     loreStyle: 'fantasy',
     monsterDifficulty: 'normal',
     aiProvider: 'chrome',
@@ -16,6 +16,8 @@ export const STORAGE_DEFAULTS = {
     appLanguage: 'tr',
     customModel: ''
   },
+  [STORAGE_KEYS.WORLD]:      { entries: [], chronicle: '', lastChronicleUpdate: null },
+  [STORAGE_KEYS.QUIZ_QUEUE]: [],
 }
 
 export async function getStorage(keys = null) {

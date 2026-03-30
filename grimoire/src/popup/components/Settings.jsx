@@ -20,19 +20,28 @@ function Section({ title, children }) {
   )
 }
 
-function AIStatusBadge({ status }) {
+function AIStatusBadge({ status, lang = 'en' }) {
+  const isEN = lang === 'en'
   const config = {
     checking: {
-      color: '#534ab7', bg: 'rgba(83,74,183,.1)', border: 'rgba(83,74,183,.2)', text: 'Kontrol ediliyor...', sub: null,
+      color: '#534ab7', bg: 'rgba(83,74,183,.1)', border: 'rgba(83,74,183,.2)',
+      text: isEN ? 'Checking...' : 'Kontrol ediliyor...',
+      sub: null,
     },
     available: {
-      color: '#1d9e75', bg: 'rgba(29,158,117,.08)', border: 'rgba(29,158,117,.2)', text: 'Hazır', sub: 'Chrome Built-in AI aktif. API key gerekmez.',
+      color: '#1d9e75', bg: 'rgba(29,158,117,.08)', border: 'rgba(29,158,117,.2)',
+      text: isEN ? 'Ready' : 'Hazır',
+      sub: isEN ? 'Chrome Built-in AI active. No API key required.' : 'Chrome Built-in AI aktif. API key gerekmez.',
     },
     downloading: {
-      color: '#ef9f27', bg: 'rgba(239,159,39,.08)', border: 'rgba(239,159,39,.2)', text: 'İndiriliyor', sub: 'Gemini Nano modeli indiriliyor. Birkaç dakika sürer.',
+      color: '#ef9f27', bg: 'rgba(239,159,39,.08)', border: 'rgba(239,159,39,.2)',
+      text: isEN ? 'Downloading' : 'İndiriliyor',
+      sub: isEN ? 'Gemini Nano model is downloading. This may take a few minutes.' : 'Gemini Nano modeli indiriliyor. Birkaç dakika sürer.',
     },
     unavailable: {
-      color: '#e24b4a', bg: 'rgba(226,75,74,.08)', border: 'rgba(226,75,74,.2)', text: 'Desteklenmiyor / Eksik Kurulum', sub: 'Hardware desteği bulunamadı. Lütfen OpenAI veya Grok kullanın.',
+      color: '#e24b4a', bg: 'rgba(226,75,74,.08)', border: 'rgba(226,75,74,.2)',
+      text: isEN ? 'Unavailable / Missing Setup' : 'Desteklenmiyor / Eksik Kurulum',
+      sub: isEN ? 'Hardware support not found. Please use OpenAI or Grok instead.' : 'Hardware desteği bulunamadı. Lütfen OpenAI veya Grok kullanın.',
     },
   }
 
@@ -52,10 +61,10 @@ function AIStatusBadge({ status }) {
   )
 }
 
-const DIFFICULTY_OPTIONS = [
-  { value: 'easy',   label: 'Kolay',  desc: 'Canavar XP drenajı %50 azaltılmış' },
-  { value: 'normal', label: 'Normal', desc: 'Standart canavar gücü' },
-  { value: 'hard',   label: 'Zor',    desc: 'Canavar XP drenajı %50 artırılmış' },
+const getDifficultyOptions = (lang) => [
+  { value: 'easy',   label: t('settings.easy', lang),   desc: lang === 'en' ? 'Monster XP drain reduced by 50%' : 'Canavar XP drenajı %50 azaltılmış' },
+  { value: 'normal', label: t('settings.normal', lang), desc: lang === 'en' ? 'Standard monster power' : 'Standart canavar gücu' },
+  { value: 'hard',   label: t('settings.hard', lang),   desc: lang === 'en' ? 'Monster XP drain increased by 50%' : 'Canavar XP drenajı %50 artırılmış' },
 ]
 
 export default function Settings({ lang = 'tr' }) {
@@ -93,6 +102,7 @@ export default function Settings({ lang = 'tr' }) {
   const resetData = () => {
     if (!confirm(t('settings.resetConfirm', lang))) return
     chrome.storage.local.clear(() => {
+      chrome.alarms.clearAll()
       chrome.storage.local.set({
         session: null,
         character: { level: 1, xp: 0, xpToNext: 500 },
@@ -105,6 +115,8 @@ export default function Settings({ lang = 'tr' }) {
           appLanguage: 'tr',
           customModel: ''
         },
+        world:      { entries: [], chronicle: '', lastChronicleUpdate: null },
+        quizQueue:  [],
       }, () => window.location.reload())
     })
   }
@@ -163,7 +175,7 @@ export default function Settings({ lang = 'tr' }) {
 
       {/* Seçilen Sağlayıcıya Göre Gösterge: SADECE CHROME */}
       {!isCloudProvider && (
-        <AIStatusBadge status={aiStatus} />
+        <AIStatusBadge status={aiStatus} lang={lang} />
       )}
 
       {/* AI Key Alanı: SADECE BULUT */}
@@ -268,7 +280,7 @@ export default function Settings({ lang = 'tr' }) {
           transition: 'background .3s', fontFamily: 'inherit',
         }}
       >
-        {saved ? 'Kaydedildi ✓' : 'Kaydet'}
+        {saved ? t('settings.saved', lang) : t('settings.save', lang)}
       </button>
 
       {/* Tehlike bölgesi */}

@@ -3,7 +3,15 @@ import { Component } from 'react'
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false, error: null, lang: 'en' }
+  }
+
+  componentDidMount() {
+    try {
+      chrome.storage.local.get(['settings'], (data) => {
+        this.setState({ lang: data.settings?.appLanguage || 'en' })
+      })
+    } catch (_) {}
   }
 
   static getDerivedStateFromError(error) {
@@ -15,6 +23,9 @@ export default class ErrorBoundary extends Component {
   }
 
   render() {
+    const { lang } = this.state
+    const isEN = lang === 'en'
+
     if (this.state.hasError) {
       return (
         <div style={{
@@ -23,9 +34,11 @@ export default class ErrorBoundary extends Component {
           fontFamily: 'sans-serif',
           fontSize: 13,
         }}>
-          <div style={{ fontWeight: 500, marginBottom: 8 }}>Bir hata oluştu</div>
+          <div style={{ fontWeight: 500, marginBottom: 8 }}>
+            {isEN ? 'An error occurred' : 'Bir hata oluştu'}
+          </div>
           <div style={{ color: '#888780', marginBottom: 16, fontSize: 12 }}>
-            {this.state.error?.message ?? 'Bilinmeyen hata'}
+            {this.state.error?.message ?? (isEN ? 'Unknown error' : 'Bilinmeyen hata')}
           </div>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
@@ -40,7 +53,7 @@ export default class ErrorBoundary extends Component {
               fontFamily: 'inherit',
             }}
           >
-            Tekrar dene
+            {isEN ? 'Try again' : 'Tekrar dene'}
           </button>
         </div>
       )

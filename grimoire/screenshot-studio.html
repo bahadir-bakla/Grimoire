@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Grimoire Screenshot Studio</title>
+    <style>
+        body { background: #0a0910; color: white; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
+        .controls { margin-bottom: 20px; padding: 25px; background: rgba(83, 74, 183, 0.1); border-radius: 12px; display: inline-block; border: 1px solid rgba(175, 169, 236, 0.2); }
+        canvas { 
+            border: 1px solid rgba(175, 169, 236, 0.4); 
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
+            /* Bilgisayar ekranlarına sığması için zoom küçültme: */
+            max-width: 900px;
+            height: auto;
+        }
+        button, label.btn { 
+            padding: 12px 24px; font-size: 14px; cursor: pointer; 
+            background: linear-gradient(135deg, #7f77dd, #534ab7); 
+            color: white; border: none; border-radius: 8px; font-weight: bold;
+            margin: 0 5px; display: inline-flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        button:hover, label.btn:hover { transform: translateY(-2px); }
+        input[type="file"] { display: none; }
+        input[type="text"] { padding: 12px; font-size: 16px; width: 450px; border-radius: 8px; border: 1px solid #7f77dd; background: #0f0e17; color: #afa9ec;}
+        .instruction { font-size: 13px; color: #888780; margin-bottom: 15px; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h2 style="color: #afa9ec; letter-spacing: 2px;">GRIMOIRE SCREENSHOT STUDIO 📸</h2>
+    
+    <div class="controls">
+        <div class="instruction">Apple kalitesinde, tam Chrome mağaza ebadı olan "1280x800" afişler yapar. Bozuk/yamuk ekran görüntülerinizi sanat eserine dönüştürür.</div>
+        
+        <input type="text" id="headlineInput" value="TRANSFORM ARTICLES INTO EPIC LORE" placeholder="Afişte ne yazsın? (İngilizce yaz)"/>
+        <br><br>
+        
+        <label class="btn">
+            📂 1. Klasörden "Ham (Raw)" Ekran Görüntünü Seç (Cmd+Shift+3)
+            <input type="file" id="imageUploader" accept="image/*">
+        </label>
+        
+        <button onclick="downloadScreenshot()">✨ 2. Afiş Olarak İndir (1280x800 HD)</button>
+    </div>
+
+    <br>
+    <canvas id="studioCanvas" width="1280" height="800"></canvas>
+
+    <script>
+        const canvas = document.getElementById('studioCanvas');
+        const ctx = canvas.getContext('2d');
+        const uploader = document.getElementById('imageUploader');
+        const headlineInput = document.getElementById('headlineInput');
+        
+        let loadedImg = null;
+
+        // Custom rect with radius (For HTML5 Canvas older logic)
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function drawCanvas() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 1. Koyu Mor ve Uzay Gradienti
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#0a0910');
+            grad.addColorStop(0.5, '#191630');
+            grad.addColorStop(1, '#0a0910');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            // 2. Hafif sihirli partiküller
+            for(let i=0; i< 1500; i++) {
+                ctx.fillStyle = `rgba(175, 169, 236, ${Math.random() * 0.4})`;
+                ctx.beginPath();
+                ctx.arc(Math.random()*w, Math.random()*h, Math.random()*1.5, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            // 3. Epik Başlık
+            const title = headlineInput.value.trim().toUpperCase();
+            if (title) {
+                ctx.fillStyle = '#e8e6d9';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.font = `700 44px 'Cinzel', serif`;
+                ctx.shadowColor = '#534ab7';
+                ctx.shadowBlur = 30;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 4;
+                ctx.fillText(title, w/2, 60);
+            }
+
+            // Gölge sıfırla
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            // 4. Ekran Görüntüsü "Mockup" Entegrasyonu
+            if (loadedImg) {
+                // Resmi sığdıracağımız güvenli alan
+                const maxW = 1040;
+                const maxH = 620;
+                const offsetY = title ? 150 : 100;
+
+                let imgW = loadedImg.width;
+                let imgH = loadedImg.height;
+
+                // En boy oranını bozmadan küçült
+                const scale = Math.min(maxW / imgW, maxH / imgH);
+                imgW = imgW * scale;
+                imgH = imgH * scale;
+
+                const dx = (w - imgW) / 2;
+                const dy = offsetY + ((maxH - imgH) / 2);
+
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+
+                // Şık Mac tarzı dış gölge
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+                ctx.shadowBlur = 40;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 20;
+                
+                // Arka planda ince bir çerçece (Mac Border)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                roundRect(ctx, dx - 4, dy - 4, imgW + 8, imgH + 8, 12);
+                ctx.fill();
+
+                // Çerçeve gölgesini kapat, asıl resmi bas
+                ctx.shadowColor = 'transparent';
+                ctx.save();
+                roundRect(ctx, dx, dy, imgW, imgH, 10);
+                ctx.clip(); // Köşeleri hafif yuvarlat
+                ctx.drawImage(loadedImg, dx, dy, imgW, imgH);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = 'rgba(175, 169, 236, 0.3)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `24px sans-serif`;
+                ctx.fillText('Önce bilgisayarından bir ekran resmi (dosya) seç 👇', w/2, h/2);
+            }
+        }
+
+        // Fontlar dolsun sonra boş tuvali çizelim
+        window.onload = () => {
+            document.fonts.ready.then(drawCanvas);
+        };
+
+        headlineInput.addEventListener('input', drawCanvas);
+
+        uploader.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedImg = img;
+                    drawCanvas();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function downloadScreenshot() {
+            if (!loadedImg) {
+                alert("Önce klasörden bir ekran resmi seçmelisin!");
+                return;
+            }
+            const dataUrl = canvas.toDataURL('image/png', 1.0);
+            const link = document.createElement('a');
+            link.download = 'Grimoire_Screenshot_Store_1280x800.png';
+            link.href = dataUrl;
+            link.click();
+        }
+    </script>
+</body>
+</html>

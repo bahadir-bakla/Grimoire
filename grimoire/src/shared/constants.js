@@ -1,10 +1,12 @@
 export const VERSION = '0.1.0'
 
 export const STORAGE_KEYS = {
-  SESSION:   'session',
-  CHARACTER: 'character',
-  GRIMOIRE:  'grimoire',
-  SETTINGS:  'settings',
+  SESSION:    'session',
+  CHARACTER:  'character',
+  GRIMOIRE:   'grimoire',
+  SETTINGS:   'settings',
+  WORLD:      'world',
+  QUIZ_QUEUE: 'quizQueue',
 }
 
 // Mesaj tipleri — background ↔ popup ↔ content script arası iletişim

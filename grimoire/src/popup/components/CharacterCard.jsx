@@ -3,14 +3,20 @@ import { t } from '../../shared/i18n.js'
 
 export default function CharacterCard({ refreshKey, lang = 'tr' }) {
   const [char, setChar]       = useState(null)
-  const [session, setSession] = useState(null)
+  const [session, setSession]  = useState(null)
   const [grimoire, setGrimoire] = useState([])
+  const [pendingQuizzes, setPendingQuizzes] = useState(0)
 
   useEffect(() => {
-    chrome.storage.local.get(['character', 'session', 'grimoire'], (data) => {
+    chrome.storage.local.get(['character', 'session', 'grimoire', 'quizQueue'], (data) => {
       setChar(data.character    ?? { level: 1, xp: 0, xpToNext: 500 })
       setSession(data.session   ?? null)
       setGrimoire(data.grimoire ?? [])
+      const now = Date.now()
+      const pending = (data.quizQueue ?? []).filter(
+        q => !q.attempted && q.scheduledFor <= now
+      ).length
+      setPendingQuizzes(pending)
     })
   }, [refreshKey])
 
@@ -111,6 +117,23 @@ export default function CharacterCard({ refreshKey, lang = 'tr' }) {
         <StatCell label={t('char.totalScrolls', lang)} value={grimoire.length} />
         <StatCell label={t('char.thisWeek', lang)} value={weeklyScrolls} />
       </div>
+
+      {/* Memory Palace badge */}
+      {pendingQuizzes > 0 && (
+        <div style={{
+          marginTop: 8,
+          background: 'rgba(175,169,236,.08)',
+          border: '0.5px solid rgba(175,169,236,.25)',
+          borderRadius: 8,
+          padding: '7px 10px',
+          fontSize: 11,
+          color: '#afa9ec',
+          textAlign: 'center',
+          letterSpacing: '.02em',
+        }}>
+          🏛️ {t('quiz.badge', lang).replace('{count}', pendingQuizzes)}
+        </div>
+      )}
     </div>
   )
 }

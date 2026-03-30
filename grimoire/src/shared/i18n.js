@@ -62,7 +62,9 @@ const dict = {
       customHint: 'Boş bırakırsanız varsayılan model kullanılır. Sağlayıcının modeli değişirse buraya yazabilirsiniz.',
       dataManagement: 'Veri Yönetimi',
       resetData: 'Tüm XP, Grimoire ve Kayıtları Sıfırla',
-      resetConfirm: 'Tüm ilerlemen, kitabelerin ve seviyen Tılsım gibi yok olacak. Emin misin?'
+      resetConfirm: 'Tüm ilerlemen, kitabelerin ve seviyen Tılsım gibi yok olacak. Emin misin?',
+      save: 'Kaydet',
+      saved: 'Kaydedildi ✓'
     },
 
     // Content Script
@@ -84,7 +86,34 @@ const dict = {
       fight: 'Savaş (+{xp} XP)',
       flee: 'Kaç',
       victory: 'Zafer! +{xp} XP kazandın.',
-      defeat: "Yenildin. XP'nin %20'si silindi."
+      defeat: "Yenildin. XP'nin %20'si silindi.",
+      xpPreview: 'XP kazanacaksın',
+      toggleTitle: 'Hikaye ve Resmi Özet arasında geçiş yap'
+    },
+
+    // World Chronicle
+    world: {
+      tab:          'Dünya',
+      entities:     'Varlıklar',
+      chronicle:    'Kronik',
+      updateBtn:    'Kroniği Güncelle',
+      generating:   'Yazılıyor...',
+      empty:        "Dünya henüz boş. Grimoire'a kayıt ekle.",
+      noChronicle:  'Varlıklar eklendi. Kroniği oluşturmak için butona bas.',
+      lastUpdated:  'Son güncelleme:',
+      copy:         'Kopyala',
+      copied:       'Kopyalandı ✓',
+      connectedTo:  'Bağlantılı:',
+      realm:        'Bölge:',
+    },
+
+    // Memory Palace
+    quiz: {
+      badge:        '{count} anın seni bekliyor',
+      skip:         'Şimdilik geç',
+      correct:      'Doğru! +75 XP',
+      wrong:        'Yanlış! Canavar geliyor...',
+      palace:       'HAFIZA SARAYI',
     }
   },
 
@@ -141,7 +170,9 @@ const dict = {
       customHint: 'Leave empty for default. If the provider model changes, enter it here.',
       dataManagement: 'Data Management',
       resetData: 'Erase All XP, Grimoire and User Data',
-      resetConfirm: 'All progress, scrolls, and levels will be wiped permanently. Are you sure?'
+      resetConfirm: 'All progress, scrolls, and levels will be wiped permanently. Are you sure?',
+      save: 'Save',
+      saved: 'Saved ✓'
     },
 
     // Content Script
@@ -163,7 +194,34 @@ const dict = {
       fight: 'Fight (+{xp} XP)',
       flee: 'Flee',
       victory: 'Victory! You gained +{xp} XP.',
-      defeat: "Defeat. 20% of your XP was wiped."
+      defeat: "Defeat. 20% of your XP was wiped.",
+      xpPreview: 'XP to be gained',
+      toggleTitle: 'Toggle between Lore and Formal Summary'
+    },
+
+    // World Chronicle
+    world: {
+      tab:          'World',
+      entities:     'Entities',
+      chronicle:    'Chronicle',
+      updateBtn:    'Update Chronicle',
+      generating:   'Writing...',
+      empty:        'World is empty. Save articles to Grimoire to begin.',
+      noChronicle:  'Entities added. Press the button to generate the Chronicle.',
+      lastUpdated:  'Last updated:',
+      copy:         'Copy',
+      copied:       'Copied ✓',
+      connectedTo:  'Connected to:',
+      realm:        'Realm:',
+    },
+
+    // Memory Palace
+    quiz: {
+      badge:        '{count} memories await you',
+      skip:         'Skip for now',
+      correct:      'Correct! +75 XP',
+      wrong:        'Wrong! Monster incoming...',
+      palace:       'MEMORY PALACE',
     }
   }
 }

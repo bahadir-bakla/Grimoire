@@ -17,9 +17,15 @@ import {
   WEEKLY_BOSS,
 } from '../shared/constants.js'
 
-import { transformToLore, checkAIAvailability } from '../shared/ai.js'
+import {
+  transformToLore,
+  checkAIAvailability,
+  extractWorldEntry,
+  generateWorldChronicle,
+  generateQuizQuestions,
+} from '../shared/ai.js'
 
-console.log('[Grimoire] Service worker started — v0.1.0')
+console.log('[Grimoire] Service worker started — v2.0.0')
 
 // ─── Yardımcı fonksiyonlar ────────────────────────────────────────────────
 
@@ -194,6 +200,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           depth: newDepth,
           leveledUp,
         })
+
+        // ▐ Living World — fire-and-forget (kayıtı engellemez)
+        addWorldEntry(msg.entry)
+        // ▐ Memory Palace — fire-and-forget
+        scheduleMemoryPalaceQuiz(msg.entry)
+
       } catch (err) {
         console.error('[Grimoire SW] SAVE_SCROLL error:', err)
         sendResponse({ ok: false, error: err.message })
@@ -222,12 +234,113 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true
   }
 
+  // ─── Living World: Kronik yenile ─────────────────────────────────────────
+
+  if (msg.type === 'REGENERATE_CHRONICLE') {
+    ;(async () => {
+      try {
+        const { world, settings } = await getStorage([STORAGE_KEYS.WORLD, STORAGE_KEYS.SETTINGS])
+        const entries = world?.entries ?? []
+        if (entries.length === 0) { sendResponse({ ok: false, error: 'No world entries yet.' }); return }
+        const chronicle = await generateWorldChronicle(entries, settings?.appLanguage || 'tr')
+        await setStorage({ [STORAGE_KEYS.WORLD]: { ...world, chronicle, lastChronicleUpdate: Date.now() } })
+        sendResponse({ ok: true, chronicle })
+      } catch (err) {
+        console.error('[Grimoire SW] REGENERATE_CHRONICLE error:', err)
+        sendResponse({ ok: false, error: err.message })
+      }
+    })()
+    return true
+  }
+
+  // ─── Memory Palace: Quiz sonucu ─────────────────────────────────────────
+
+  if (msg.type === 'QUIZ_RESULT') {
+    ;(async () => {
+      try {
+        const { quizQueue } = await getStorage([STORAGE_KEYS.QUIZ_QUEUE])
+        const updated = (quizQueue ?? []).map(q =>
+          q.id === msg.quizId ? { ...q, attempted: true } : q
+        )
+        await setStorage({ [STORAGE_KEYS.QUIZ_QUEUE]: updated })
+        if (msg.correct) {
+          await updateCharacter(75)
+          sendResponse({ ok: true, xpGained: 75 })
+        } else {
+          await drainCharacterXP(30)
+          sendResponse({ ok: true, xpGained: 0 })
+        }
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message })
+      }
+    })()
+    return true
+  }
+
   return true
 })
+
+// ─── Living World: Fire-and-forget yardımcılar ─────────────────────────────
+
+async function addWorldEntry(entry) {
+  try {
+    const { world } = await getStorage([STORAGE_KEYS.WORLD])
+    const worldData = world ?? { entries: [], chronicle: '', lastChronicleUpdate: null }
+    const worldEntry = await extractWorldEntry(entry.loreText, worldData.entries)
+    worldEntry.id       = entry.id
+    worldEntry.addedAt  = Date.now()
+    const updatedEntries = [worldEntry, ...worldData.entries]
+    await setStorage({ [STORAGE_KEYS.WORLD]: { ...worldData, entries: updatedEntries } })
+    console.log('[Grimoire World] Entity added:', worldEntry.title)
+  } catch (err) {
+    console.warn('[Grimoire World] non-critical:', err.message)
+  }
+}
+
+async function scheduleMemoryPalaceQuiz(entry) {
+  try {
+    const { settings, quizQueue } = await getStorage([STORAGE_KEYS.SETTINGS, STORAGE_KEYS.QUIZ_QUEUE])
+    const queue = quizQueue ?? []
+    if (queue.find(q => q.entryId === entry.id)) return  // duplicate guard
+
+    const questions = await generateQuizQuestions(
+      entry.loreText,
+      settings?.appLanguage || 'tr'
+    )
+
+    const quizItem = {
+      id:           crypto.randomUUID(),
+      entryId:      entry.id,
+      articleTitle: entry.title,
+      scheduledFor: Date.now() + (3 * 24 * 60 * 60 * 1000),  // 3 gün
+      attempted:    false,
+      questions,
+    }
+
+    await setStorage({ [STORAGE_KEYS.QUIZ_QUEUE]: [...queue, quizItem] })
+    chrome.alarms.create(`quiz-${quizItem.id}`, { when: quizItem.scheduledFor })
+    console.log('[Grimoire Quiz] Scheduled for:', entry.title)
+  } catch (err) {
+    console.warn('[Grimoire Quiz] non-critical:', err.message)
+  }
+}
 
 // ─── Tab değişim takibi ───────────────────────────────────────────────────
 
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  // Pending quiz var mı kontrol et (alarm tetiklenirken aktif tab yoktu)
+  try {
+    const { pendingQuizId } = await getStorage(['pendingQuizId'])
+    if (pendingQuizId) {
+      await setStorage({ pendingQuizId: null })
+      const { quizQueue } = await getStorage([STORAGE_KEYS.QUIZ_QUEUE])
+      const quiz = (quizQueue ?? []).find(q => q.id === pendingQuizId && !q.attempted)
+      if (quiz) {
+        chrome.tabs.sendMessage(tabId, { type: 'QUIZ_TIME', quiz }).catch(() => {})
+      }
+    }
+  } catch (_) {}
+
   const session = await getActiveSession()
   if (!session) return
 
@@ -336,6 +449,24 @@ chrome.tabs.onUpdated.addListener(() => {
 })
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
+
+  // ▐ Memory Palace quiz teslimatı
+  if (alarm.name.startsWith('quiz-')) {
+    const quizId = alarm.name.replace('quiz-', '')
+    const { quizQueue } = await getStorage([STORAGE_KEYS.QUIZ_QUEUE])
+    const quiz = (quizQueue ?? []).find(q => q.id === quizId && !q.attempted)
+    if (!quiz) return
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (!activeTab) {
+      await setStorage({ pendingQuizId: quizId })
+      return
+    }
+    chrome.tabs.sendMessage(activeTab.id, { type: 'QUIZ_TIME', quiz }).catch(async () => {
+      await setStorage({ pendingQuizId: quizId })
+    })
+    return
+  }
+
   if (alarm.name === 'idle-check') {
     const session = await getActiveSession()
     if (!session) return
