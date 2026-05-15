@@ -67,8 +67,13 @@ Görevin: Verilen metni akademik veya profesyonel bir sadelikte, en önemli kıs
     return runAnthropic(trimmedText, finalSystemPrompt, apiKey, providerDef, settings)
   } else if (providerId === 'gemini') {
     return runGeminiAPI(trimmedText, finalSystemPrompt, apiKey, providerDef, settings)
+  } else if (providerId === 'grok') {
+    return runGrokNative(trimmedText, finalSystemPrompt, apiKey, providerDef, settings)
+  } else if (providerId === 'custom') {
+    const customDef = { ...providerDef, url: settings.customEndpoint || 'https://api.openai.com/v1/chat/completions' }
+    return runOpenAICompat(trimmedText, finalSystemPrompt, apiKey, customDef, settings)
   } else {
-    // OpenAI ve xAI (Grok) aynı endpoints formatını destekler
+    // OpenAI ve uyumlular
     return runOpenAICompat(trimmedText, finalSystemPrompt, apiKey, providerDef, settings)
   }
 }
@@ -181,6 +186,38 @@ async function runGeminiAPI(text, systemPrompt, apiKey, providerDef, settings) {
   return content.trim()
 }
 
+async function runGrokNative(text, systemPrompt, apiKey, providerDef, settings) {
+  const model = settings?.customModel?.trim() || providerDef.model
+  const res = await fetch(providerDef.url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey.trim()}`
+    },
+    body: JSON.stringify({
+      model: model,
+      instructions: systemPrompt,
+      input: `Aşağıdaki metni dönüştür:\n\n${text}`
+    })
+  })
+
+  if (!res.ok) {
+    let errText = ''
+    try {
+      const err = await res.json()
+      errText = err?.error?.message || JSON.stringify(err)
+    } catch (e) {
+      errText = 'JSON parsing failed'
+    }
+    throw new Error(`Grok API Error: ${res.status} - ${errText}`)
+  }
+
+  const data = await res.json()
+  const content = data?.output?.[0]?.content?.[0]?.text
+  if (!content) throw new Error('Grok boş yanıt döndürdü.')
+  return content.trim()
+}
+
 // ─── Shared internal provider caller ─────────────────────────────────────────
 // transformToLore'un aksine bu helper doğrudan çağrılabilir ve sistem içi
 // World + Quiz işlemlerinde kullanılır.
@@ -201,6 +238,11 @@ async function callProvider(systemPrompt, userContent) {
 
   if (providerId === 'anthropic') return runAnthropic(userContent, systemPrompt, apiKey, providerDef, settings)
   if (providerId === 'gemini')    return runGeminiAPI(userContent, systemPrompt, apiKey, providerDef, settings)
+  if (providerId === 'grok')      return runGrokNative(userContent, systemPrompt, apiKey, providerDef, settings)
+  if (providerId === 'custom') {
+    const customDef = { ...providerDef, url: settings.customEndpoint || 'https://api.openai.com/v1/chat/completions' }
+    return runOpenAICompat(userContent, systemPrompt, apiKey, customDef, settings)
+  }
   return runOpenAICompat(userContent, systemPrompt, apiKey, providerDef, settings)
 }
 

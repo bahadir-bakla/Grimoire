@@ -21,8 +21,11 @@ export const MSG = {
   SESSION_ENDED:    'SESSION_ENDED',
 
   // Content Script → Background
-  TRANSFORM_TO_LORE: 'TRANSFORM_TO_LORE',  // Phase 2'de
-  SAVE_SCROLL:       'SAVE_SCROLL',          // Phase 3'te
+  TRANSFORM_TO_LORE: 'TRANSFORM_TO_LORE',
+  SAVE_SCROLL:       'SAVE_SCROLL',
+  SAVE_NOTE:         'SAVE_NOTE',
+  GET_NOTE:          'GET_NOTE',
+  TRANSFORM_HIGHLIGHT: 'TRANSFORM_HIGHLIGHT',
 
   // Background → Popup
   XP_UPDATE:    'XP_UPDATE',
@@ -138,8 +141,9 @@ export const AI_PROVIDERS = {
   chrome:    { id: 'chrome',    label: 'Chrome Built-in AI', needKey: false },
   openai:    { id: 'openai',    label: 'OpenAI (ChatGPT)',   needKey: true, url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
   anthropic: { id: 'anthropic', label: 'Anthropic (Claude)', needKey: true, url: 'https://api.anthropic.com/v1/messages',      model: 'claude-3-haiku-20240307' },
-  grok:      { id: 'grok',      label: 'xAI (Grok)',         needKey: true, url: 'https://api.x.ai/v1/chat/completions',       model: 'grok-4-1-fast' },
-  gemini:    { id: 'gemini',    label: 'Google Gemini API',  needKey: true, url: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent', model: 'gemini-1.5-flash' }
+  grok:      { id: 'grok',      label: 'xAI (Grok)',         needKey: true, url: 'https://api.x.ai/v1/responses',       model: 'grok-4.20-reasoning' },
+  gemini:    { id: 'gemini',    label: 'Google Gemini API',  needKey: true, url: 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent', model: 'gemini-1.5-flash' },
+  custom:    { id: 'custom',    label: 'Özel / OpenRouter (OpenAI Uyumlu)', needKey: true, url: '', model: '' }
 }
 
 // Lore stil tanımları

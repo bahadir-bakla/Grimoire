@@ -6,6 +6,15 @@ import WorldChronicle   from './components/WorldChronicle.jsx'
 import Settings         from './components/Settings.jsx'
 import { t }            from '../shared/i18n.js'
 
+// AI durum renk/etiket map
+const AI_STATUS_DOT = {
+  checking:    { color: '#534ab7', title: 'AI kontrol ediliyor…' },
+  available:   { color: '#1d9e75', title: 'AI hazır' },
+  downloading: { color: '#ef9f27', title: 'Model indiriliyor…' },
+  unavailable: { color: '#e24b4a', title: 'AI kullanılamıyor — API key gerekli' },
+  configured:  { color: '#1d9e75', title: 'API key ayarlandı' },
+}
+
 const TABS = [
   { id: 'seans',    label: 'Seans'   },
   { id: 'grimoire', label: 'Grimoire'},
@@ -17,10 +26,20 @@ export default function App() {
   const [activeTab, setActiveTab]           = useState('seans')
   const [charRefreshKey, setCharRefreshKey] = useState(0)
   const [lang, setLang]                     = useState('tr')
+  const [aiStatus, setAiStatus]             = useState('checking')
 
   useEffect(() => {
     chrome.storage.local.get(['settings'], (data) => {
-      setLang(data.settings?.appLanguage || 'tr')
+      const s = data.settings
+      setLang(s?.appLanguage || 'tr')
+      // Cloud provider + key varsa "configured" say, yoksa Chrome AI'ı kontrol et
+      if (s?.aiProvider && s.aiProvider !== 'chrome' && s.apiKey) {
+        setAiStatus('configured')
+      } else {
+        chrome.runtime.sendMessage({ type: 'CHECK_AI' }, (res) => {
+          setAiStatus(res?.status ?? 'unavailable')
+        })
+      }
     })
   }, [])
 
@@ -37,14 +56,19 @@ export default function App() {
         borderBottom: '0.5px solid rgba(255,255,255,.07)',
         flexShrink: 0,
       }}>
-        <div style={{
-          fontSize: 12,
-          fontWeight: 600,
-          color: '#afa9ec',
-          letterSpacing: '.14em',
-          marginBottom: 12,
-        }}>
-          GRIMOIRE
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#afa9ec', letterSpacing: '.14em' }}>
+            GRIMOIRE
+          </div>
+          <div
+            title={AI_STATUS_DOT[aiStatus]?.title ?? ''}
+            style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: AI_STATUS_DOT[aiStatus]?.color ?? '#534ab7',
+              boxShadow: `0 0 5px ${AI_STATUS_DOT[aiStatus]?.color ?? '#534ab7'}88`,
+              flexShrink: 0,
+            }}
+          />
         </div>
 
         {/* Tab bar */}

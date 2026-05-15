@@ -38,7 +38,16 @@ const dict = {
       loading: 'Yükleniyor...',
       empty1: 'Grimoire boş.',
       empty2: 'Seans başlat, bir sayfa oku ve kaydet.',
-      deleteConfirm: 'Bu kaydı Grimoire hafızasından silmek istediğine emin misin?'
+      emptySearch: 'Arama sonucu bulunamadı.',
+      deleteConfirm: 'Bu kaydı Grimoire hafızasından silmek istediğine emin misin?',
+      searchPlaceholder: 'Başlık veya lore içinde ara...',
+      tagPlaceholder: 'Etiket ekle (Enter)',
+      exportBtn: 'Dışa Aktar',
+      exportMd: 'Markdown olarak indir',
+      exportJson: 'JSON olarak indir',
+      highlight: 'Seçili Metin',
+      noTags: 'Etiket yok',
+      allTags: 'Tümü',
     },
     
     // Settings
@@ -88,7 +97,17 @@ const dict = {
       victory: 'Zafer! +{xp} XP kazandın.',
       defeat: "Yenildin. XP'nin %20'si silindi.",
       xpPreview: 'XP kazanacaksın',
-      toggleTitle: 'Hikaye ve Resmi Özet arasında geçiş yap'
+      toggleTitle: 'Hikaye ve Resmi Özet arasında geçiş yap',
+      noteTitle: 'Sayfa Notu',
+      notePlaceholder: 'Bu sayfa hakkında notunu yaz...',
+      noteSave: 'Notu Kaydet',
+      noteSaved: 'Kaydedildi ✓',
+      noteEmpty: 'Henüz not yok',
+      noteTransform: 'Lore\'a Dönüştür',
+      highlightSave: 'Seçili Metni Kaydet',
+      highlightTransform: 'Lore\'a Dönüştür & Kaydet',
+      highlightSaving: 'Dönüştürülüyor...',
+      highlightDone: 'Kaydedildi!',
     },
 
     // World Chronicle
@@ -105,6 +124,8 @@ const dict = {
       copied:       'Kopyalandı ✓',
       connectedTo:  'Bağlantılı:',
       realm:        'Bölge:',
+      mapView:      '🗺️ Harita',
+      chronicleView:'📜 Kronik',
     },
 
     // Memory Palace
@@ -146,7 +167,16 @@ const dict = {
       loading: 'Loading...',
       empty1: 'Grimoire is empty.',
       empty2: 'Start a session, read a page and save.',
-      deleteConfirm: 'Are you sure you want to delete this record from Grimoire?'
+      emptySearch: 'No results found.',
+      deleteConfirm: 'Are you sure you want to delete this record from Grimoire?',
+      searchPlaceholder: 'Search title or lore...',
+      tagPlaceholder: 'Add tag (Enter)',
+      exportBtn: 'Export',
+      exportMd: 'Download as Markdown',
+      exportJson: 'Download as JSON',
+      highlight: 'Highlight',
+      noTags: 'No tags',
+      allTags: 'All',
     },
     
     // Settings
@@ -196,7 +226,17 @@ const dict = {
       victory: 'Victory! You gained +{xp} XP.',
       defeat: "Defeat. 20% of your XP was wiped.",
       xpPreview: 'XP to be gained',
-      toggleTitle: 'Toggle between Lore and Formal Summary'
+      toggleTitle: 'Toggle between Lore and Formal Summary',
+      noteTitle: 'Page Note',
+      notePlaceholder: 'Write your note about this page...',
+      noteSave: 'Save Note',
+      noteSaved: 'Saved ✓',
+      noteEmpty: 'No note yet',
+      noteTransform: 'Transform to Lore',
+      highlightSave: 'Save Selection',
+      highlightTransform: 'Transform to Lore & Save',
+      highlightSaving: 'Transforming...',
+      highlightDone: 'Saved!',
     },
 
     // World Chronicle
@@ -213,6 +253,8 @@ const dict = {
       copied:       'Copied ✓',
       connectedTo:  'Connected to:',
       realm:        'Realm:',
+      mapView:      '🗺️ Map',
+      chronicleView:'📜 Chronicle',
     },
 
     // Memory Palace

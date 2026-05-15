@@ -99,6 +99,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           active: true,
           currentWindow: true,
         })
+        
+        // activeTab izniyle çalışıyorsak, içerik scriptini manuel enjekte etmeliyiz
+        // çünkü manifest'teki content_scripts sadece sosyal medya sitelerinde otomatik çalışıyor.
+        if (activeTab && activeTab.id && !isDistraction(activeTab.url)) {
+          try {
+            const manifest = chrome.runtime.getManifest()
+            const cssFiles = manifest.content_scripts?.[0]?.css || []
+            const jsFiles = manifest.content_scripts?.[0]?.js || []
+            
+            if (cssFiles.length > 0) {
+              await chrome.scripting.insertCSS({
+                target: { tabId: activeTab.id },
+                files: cssFiles
+              }).catch(e => console.log('CSS Inject:', e.message))
+            }
+            if (jsFiles.length > 0) {
+              await chrome.scripting.executeScript({
+                target: { tabId: activeTab.id },
+                files: jsFiles
+              }).catch(e => console.log('JS Inject:', e.message))
+            }
+          } catch (injectErr) {
+            console.log('[Grimoire SW] Script could not inject:', injectErr.message);
+          }
+        }
+
         const session = await startSession(activeTab?.id ?? null, msg.mode)
         sendResponse({ ok: true, session })
       } catch (err) {
@@ -208,6 +234,86 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       } catch (err) {
         console.error('[Grimoire SW] SAVE_SCROLL error:', err)
+        sendResponse({ ok: false, error: err.message })
+      }
+    })()
+    return true
+  }
+
+  // ─── Sayfa Notu: Kaydet ──────────────────────────────────────────────────
+
+  if (msg.type === MSG.SAVE_NOTE) {
+    ;(async () => {
+      try {
+        const { notes } = await getStorage(['notes'])
+        const notesMap = notes ?? {}
+        const url = msg.url
+        if (msg.text && msg.text.trim()) {
+          notesMap[url] = { text: msg.text.trim(), updatedAt: Date.now() }
+        } else {
+          delete notesMap[url]
+        }
+        await setStorage({ notes: notesMap })
+        sendResponse({ ok: true })
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message })
+      }
+    })()
+    return true
+  }
+
+  // ─── Sayfa Notu: Oku ─────────────────────────────────────────────────────
+
+  if (msg.type === MSG.GET_NOTE) {
+    ;(async () => {
+      try {
+        const { notes } = await getStorage(['notes'])
+        const note = notes?.[msg.url] ?? null
+        sendResponse({ ok: true, note })
+      } catch (err) {
+        sendResponse({ ok: false, error: err.message })
+      }
+    })()
+    return true
+  }
+
+  // ─── Highlight: Lore'a dönüştür & kaydet ────────────────────────────────
+
+  if (msg.type === MSG.TRANSFORM_HIGHLIGHT) {
+    ;(async () => {
+      try {
+        const { settings, character } = await getStorage([STORAGE_KEYS.SETTINGS, STORAGE_KEYS.CHARACTER])
+        const loreStyle = settings?.loreStyle || 'fantasy'
+
+        const loreText = await transformToLore({ text: msg.text, loreStyle })
+
+        const entry = {
+          id:          crypto.randomUUID(),
+          title:       msg.title || 'Seçili Metin',
+          url:         msg.url,
+          loreText,
+          xpEarned:    50,
+          savedAt:     Date.now(),
+          scrollPct:   0,
+          readSecs:    0,
+          prevLevel:   character?.level ?? 1,
+          loreStyle:   settings?.loreStyle || 'fantasy',
+          tags:        [],
+          isHighlight: true,
+          comment:     msg.comment || '',
+        }
+
+        const { saved, reason } = await addToGrimoire(entry)
+        if (!saved) { sendResponse({ ok: false, reason, loreText }); return }
+
+        const updatedChar = await updateCharacter(50)
+        const leveledUp = updatedChar.level > (character?.level ?? 1)
+
+        sendResponse({ ok: true, loreText, character: updatedChar, leveledUp })
+
+        addWorldEntry(entry)
+      } catch (err) {
+        console.error('[Grimoire SW] TRANSFORM_HIGHLIGHT error:', err)
         sendResponse({ ok: false, error: err.message })
       }
     })()
@@ -324,6 +430,49 @@ async function scheduleMemoryPalaceQuiz(entry) {
     console.warn('[Grimoire Quiz] non-critical:', err.message)
   }
 }
+
+// ─── Keyboard shortcut: Alt+G → sidebar toggle ───────────────────────────
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== 'toggle-sidebar') return
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (!activeTab?.id) return
+
+  const url = activeTab.url ?? ''
+  if (url.startsWith('chrome://') || url.startsWith('chrome-extension://') || url.startsWith('https://chromewebstore.google.com')) return
+
+  try {
+    // Önce CSS inject et (sidebar stilleri için)
+    const manifest = chrome.runtime.getManifest()
+    const cssFiles = manifest.content_scripts?.[0]?.css || []
+    const jsFiles  = manifest.content_scripts?.[0]?.js  || []
+
+    if (cssFiles.length) {
+      await chrome.scripting.insertCSS({ target: { tabId: activeTab.id }, files: cssFiles }).catch(() => {})
+    }
+    if (jsFiles.length) {
+      await chrome.scripting.executeScript({ target: { tabId: activeTab.id }, files: jsFiles }).catch(() => {})
+    }
+
+    // Kısa gecikme sonrası sidebar toggle
+    setTimeout(async () => {
+      await chrome.scripting.executeScript({
+        target: { tabId: activeTab.id },
+        func: () => {
+          const sidebar = document.getElementById('gr-sidebar')
+          if (sidebar) {
+            sidebar.classList.add('gr-sidebar-closing')
+            setTimeout(() => sidebar.remove(), 250)
+          } else {
+            window.dispatchEvent(new CustomEvent('gr-open-sidebar'))
+          }
+        },
+      }).catch(() => {})
+    }, 150)
+  } catch {
+    // Inject edilemeyen sayfalarda sessizce geç
+  }
+})
 
 // ─── Tab değişim takibi ───────────────────────────────────────────────────
 

@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Grimoire",
-  "version": "2.0.0",
+  "version": "2.3.0",
   "description": "Transform reading into RPG lore and summaries! Earn XP, level up focus, and slay distraction monsters with multi-AI support.",
   "permissions": [
     "storage",
     "tabs",
     "activeTab",
-    "alarms"
+    "alarms",
+    "scripting"
   ],
   "host_permissions": [
     "*://*.twitter.com/*",
@@ -58,6 +59,15 @@
       ]
     }
   ],
+  "commands": {
+    "toggle-sidebar": {
+      "suggested_key": {
+        "default": "Alt+G",
+        "mac": "Alt+G"
+      },
+      "description": "Grimoire sidebar'ı aç/kapat"
+    }
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -72,5 +82,15 @@
     "32": "public/icons/icon32.png",
     "48": "public/icons/icon48.png",
     "128": "public/icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "matches": ["<all_urls>"],
+      "resources": [
+        "src/content/content.js",
+        "src/content/content.css",
+        "assets/*"
+      ]
+    }
+  ]
 }

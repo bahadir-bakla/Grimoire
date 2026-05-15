@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { t } from '../../shared/i18n.js'
+import WorldMap from './WorldMap.jsx'
 
 const TYPE_ICONS = {
   place:     '🏰',
@@ -13,6 +14,7 @@ export default function WorldChronicle({ lang = 'tr' }) {
   const [world, setWorld]       = useState(null)
   const [loading, setLoading]   = useState(false)
   const [copied,  setCopied]    = useState(false)
+  const [viewMode, setViewMode] = useState('map') // 'map' or 'chronicle'
 
   useEffect(() => {
     chrome.storage.local.get(['world'], ({ world }) => {
@@ -50,11 +52,47 @@ export default function WorldChronicle({ lang = 'tr' }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Entity Chips ──────────────────────────────────────────── */}
+      {/* ── View Mode Toggle ─────────────────────────────────────── */}
       {!isEmpty && (
-        <div>
-          <div style={{
-            fontSize: 10, fontWeight: 600, letterSpacing: '.08em',
+        <div style={{ display: 'flex', background: 'rgba(255,255,255,.04)', borderRadius: 8, padding: 4 }}>
+          <button
+            onClick={() => setViewMode('map')}
+            style={{
+              flex: 1, padding: '6px 0', border: 'none', borderRadius: 6,
+              background: viewMode === 'map' ? '#534ab7' : 'transparent',
+              color: viewMode === 'map' ? '#fff' : '#afa9ec',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .2s'
+            }}
+          >
+            {t('world.mapView', lang)}
+          </button>
+          <button
+            onClick={() => setViewMode('chronicle')}
+            style={{
+              flex: 1, padding: '6px 0', border: 'none', borderRadius: 6,
+              background: viewMode === 'chronicle' ? '#534ab7' : 'transparent',
+              color: viewMode === 'chronicle' ? '#fff' : '#afa9ec',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all .2s'
+            }}
+          >
+            {t('world.chronicleView', lang)}
+          </button>
+        </div>
+      )}
+
+      {/* ── World Map View ───────────────────────────────────────── */}
+      {viewMode === 'map' && !isEmpty && (
+        <WorldMap world={world} lang={lang} />
+      )}
+
+      {/* ── Chronicle View ───────────────────────────────────────── */}
+      {(viewMode === 'chronicle' || isEmpty) && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* ── Entity Chips ──────────────────────────────────────────── */}
+          {!isEmpty && (
+            <div>
+              <div style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: '.08em',
             color: '#534ab7', textTransform: 'uppercase', marginBottom: 8,
           }}>
             {t('world.entities', lang)} ({world.entries.length})
@@ -185,6 +223,8 @@ export default function WorldChronicle({ lang = 'tr' }) {
           </div>
         )}
       </div>
+      </div>
+      )}
     </div>
   )
 }

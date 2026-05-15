@@ -15,7 +15,7 @@ console.log('[Grimoire] Content script loaded:', window.location.href)
 
 // ─── Background'dan gelen mesajları dinle ─────────────────────────────────
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   console.log('[Grimoire CS] Message received:', msg.type)
 
   if (msg.type === MSG.MONSTER_ATTACK) {
@@ -72,11 +72,6 @@ function handleMonsterAttack(msg) {
     if (bar) bar.style.width = '100%'
   })
 
-  document.getElementById('gr-monster-ok').addEventListener('click', () => {
-    overlay.classList.add('gr-monster-leaving')
-    setTimeout(() => overlay.remove(), 300)
-  })
-
   // 10 saniye sonra otomatik kapat
   const timer = setTimeout(() => {
     overlay.classList.add('gr-monster-leaving')
@@ -85,6 +80,8 @@ function handleMonsterAttack(msg) {
 
   document.getElementById('gr-monster-ok').addEventListener('click', () => {
     clearTimeout(timer)
+    overlay.classList.add('gr-monster-leaving')
+    setTimeout(() => overlay.remove(), 300)
   }, { once: true })
 }
 
@@ -217,7 +214,11 @@ function createSidebar() {
   sidebar.innerHTML = `
     <div class="gr-sidebar-header">
       <span class="gr-sidebar-title">GRIMOIRE</span>
-      <button class="gr-sidebar-close" id="gr-close" title="Kapat">×</button>
+      <div class="gr-sidebar-header-actions">
+        <button class="gr-tab-btn gr-tab-active" id="gr-tab-lore" title="${UI_LANG === 'en' ? 'Lore' : 'Lore'}">📖</button>
+        <button class="gr-tab-btn" id="gr-tab-note" title="${t('content.noteTitle', UI_LANG)}">📝</button>
+        <button class="gr-sidebar-close" id="gr-close" title="Kapat">×</button>
+      </div>
     </div>
     <div class="gr-sidebar-body" id="gr-body">
       <div class="gr-loading" id="gr-loading">
@@ -227,6 +228,13 @@ function createSidebar() {
       </div>
       <div class="gr-lore-text" id="gr-lore" style="display:none"></div>
       <div class="gr-error" id="gr-error" style="display:none"></div>
+      <div class="gr-note-panel" id="gr-note-panel" style="display:none">
+        <div class="gr-note-label">${t('content.noteTitle', UI_LANG)}</div>
+        <textarea class="gr-note-textarea" id="gr-note-textarea" placeholder="${t('content.notePlaceholder', UI_LANG)}"></textarea>
+        <div class="gr-note-actions">
+          <button class="gr-note-save-btn" id="gr-note-save">${t('content.noteSave', UI_LANG)}</button>
+        </div>
+      </div>
     </div>
     <div class="gr-sidebar-footer" id="gr-footer" style="display:none">
       <div style="display:flex; gap:8px; margin-bottom:8px;">
@@ -245,6 +253,78 @@ function createSidebar() {
     sidebar.classList.add('gr-sidebar-closing')
     setTimeout(() => sidebar.remove(), 250)
   })
+
+  // Sekme geçişi: Lore ↔ Not
+  document.getElementById('gr-tab-lore').addEventListener('click', () => switchSidebarTab('lore'))
+  document.getElementById('gr-tab-note').addEventListener('click', () => switchSidebarTab('note'))
+
+  // Not kaydet
+  document.getElementById('gr-note-save').addEventListener('click', savePageNote)
+
+  // Mevcut notu yükle
+  loadPageNote()
+}
+
+function switchSidebarTab(tab) {
+  const loreBtn  = document.getElementById('gr-tab-lore')
+  const noteBtn  = document.getElementById('gr-tab-note')
+  const footer   = document.getElementById('gr-footer')
+  const notePanel = document.getElementById('gr-note-panel')
+  const loading  = document.getElementById('gr-loading')
+  const loreEl   = document.getElementById('gr-lore')
+  const errorEl  = document.getElementById('gr-error')
+
+  if (tab === 'lore') {
+    loreBtn.classList.add('gr-tab-active')
+    noteBtn.classList.remove('gr-tab-active')
+    notePanel.style.display = 'none'
+    // Lore elementlerini tekrar göster
+    if (loreEl && loreEl.innerHTML) loreEl.style.display = 'block'
+    else if (loading) loading.style.display = 'flex'
+    if (errorEl && errorEl.textContent) errorEl.style.display = 'block'
+    if (footer && window.grLorePages?.some(Boolean)) footer.style.display = 'block'
+  } else {
+    noteBtn.classList.add('gr-tab-active')
+    loreBtn.classList.remove('gr-tab-active')
+    if (loading) loading.style.display = 'none'
+    if (loreEl) loreEl.style.display = 'none'
+    if (errorEl) errorEl.style.display = 'none'
+    if (footer) footer.style.display = 'none'
+    notePanel.style.display = 'flex'
+  }
+}
+
+async function loadPageNote() {
+  const res = await chrome.runtime.sendMessage({
+    type: MSG.GET_NOTE,
+    url: window.location.href,
+  }).catch(() => null)
+
+  const textarea = document.getElementById('gr-note-textarea')
+  if (textarea && res?.note?.text) {
+    textarea.value = res.note.text
+  }
+}
+
+async function savePageNote() {
+  const textarea = document.getElementById('gr-note-textarea')
+  const saveBtn  = document.getElementById('gr-note-save')
+  if (!textarea || !saveBtn) return
+
+  saveBtn.textContent = '...'
+  saveBtn.disabled = true
+
+  await chrome.runtime.sendMessage({
+    type: MSG.SAVE_NOTE,
+    url:  window.location.href,
+    text: textarea.value,
+  }).catch(() => null)
+
+  saveBtn.textContent = t('content.noteSaved', UI_LANG)
+  setTimeout(() => {
+    saveBtn.textContent = t('content.noteSave', UI_LANG)
+    saveBtn.disabled = false
+  }, 1500)
 }
 
 function showLoading() {
@@ -391,10 +471,10 @@ async function transformChunk(pageIndex) {
     type: MSG.TRANSFORM_TO_LORE,
     text,
     overrideStyle: window.grCurrentMode === 'formal_summary' ? 'formal_summary' : null
-  })
+  }).catch(() => null) // Catch any promise rejection from sendMessage
 
-  if (!res.ok) {
-    showError(`${t('content.spellFailed', UI_LANG)} ${res.error}`)
+  if (!res || !res.ok) {
+    showError(`${t('content.spellFailed', UI_LANG)} ${res?.error || chrome.runtime.lastError?.message || 'Bilinmeyen Hata'}`)
     return
   }
 
@@ -461,6 +541,17 @@ function renderCurrentPage() {
   }
 }
 
+// ─── Alt+G shortcut → sidebar aç (session olmasa da not sekmesi) ─────────
+
+window.addEventListener('gr-open-sidebar', () => {
+  if (getSidebar()) return
+  createSidebar()
+  // Session yoksa not sekmesini öne çıkar
+  chrome.storage.local.get(['session'], ({ session }) => {
+    if (!session?.isActive) switchSidebarTab('note')
+  })
+})
+
 // ─── Seans durumunu kontrol et, aktifse dönüştür ─────────────────────────
 
 // 1. Sayfa yüklendiğinde
@@ -485,7 +576,7 @@ async function saveCurrentPage() {
   saveBtn.disabled = true
 
   // Tüm dönüştürülmüş chunk'ları birleştir
-  const totalLoreText = (window.grLorePages || []).filter(Boolean).join('\\n\\n---\\n\\n')
+  const totalLoreText = (window.grLorePages || []).filter(Boolean).join('\n\n---\n\n')
 
   const scrollable = document.body.scrollHeight - window.innerHeight
   const scrollPct  = scrollable > 0 ? Math.min(100, (window.scrollY / scrollable) * 100) : 50
@@ -498,17 +589,21 @@ async function saveCurrentPage() {
   if (scrollPct >= 80) xp += XP_CONFIG.DEEP_SCROLL_BONUS
   xp = Math.min(xp, XP_CONFIG.MAX_XP_PER_SAVE * 2)
 
-  const { character } = await chrome.storage.local.get(['character'])
+  const { character, settings } = await chrome.storage.local.get(['character', 'settings'])
   const entry = {
-    id:        crypto.randomUUID(),
-    title:     currentPageTitle || document.title.slice(0, 80),
-    url:       window.location.href,
-    loreText:  totalLoreText,
-    xpEarned:  xp,
-    savedAt:   Date.now(),
-    scrollPct: Math.floor(scrollPct),
+    id:          crypto.randomUUID(),
+    title:       currentPageTitle || document.title.slice(0, 80),
+    url:         window.location.href,
+    loreText:    totalLoreText,
+    xpEarned:    xp,
+    savedAt:     Date.now(),
+    scrollPct:   Math.floor(scrollPct),
     readSecs,
-    prevLevel: character?.level ?? 1,
+    prevLevel:   character?.level ?? 1,
+    loreStyle:   settings?.loreStyle || 'fantasy',
+    tags:        [],
+    comment:     '',
+    isHighlight: false,
   }
 
   const res = await chrome.runtime.sendMessage({
@@ -558,6 +653,142 @@ function showLevelUpBanner(newLevel) {
   `
   document.body.appendChild(banner)
   setTimeout(() => banner.remove(), 3000)
+}
+
+// ─── Highlight & Save ────────────────────────────────────────────────────
+
+let grHighlightBtn = null
+
+document.addEventListener('mouseup', (e) => {
+  // Sidebar içindeki seçimleri yoksay
+  if (document.getElementById('gr-sidebar')?.contains(e.target)) return
+
+  const selection = window.getSelection()
+  const text = selection?.toString().trim()
+
+  if (!text || text.length < 30) {
+    grHighlightBtn?.remove()
+    grHighlightBtn = null
+    return
+  }
+
+  // Buton zaten varsa kaldır
+  grHighlightBtn?.remove()
+
+  const range = selection.getRangeAt(0)
+  const rect  = range.getBoundingClientRect()
+
+  const popupTop  = Math.max(8, rect.bottom + 8)
+  const popupLeft = Math.min(window.innerWidth - 280, Math.max(8, rect.left + rect.width / 2 - 140))
+
+  const popup = document.createElement('div')
+  popup.id = 'gr-highlight-btn'
+  popup.innerHTML = `
+    <div class="gr-hl-popup">
+      <div class="gr-hl-popup-preview">${text.slice(0, 120)}${text.length > 120 ? '…' : ''}</div>
+      <textarea
+        class="gr-hl-comment"
+        id="gr-hl-comment"
+        placeholder="${UI_LANG === 'en' ? 'Add your comment (optional)…' : 'Yorumunu ekle (opsiyonel)…'}"
+        rows="2"
+      ></textarea>
+      <button class="gr-hl-action" id="gr-hl-transform">
+        ✨ ${t('content.highlightTransform', UI_LANG)}
+      </button>
+    </div>
+  `
+  popup.style.cssText = `
+    position: fixed;
+    top: ${popupTop}px;
+    left: ${popupLeft}px;
+    z-index: 2147483646;
+    animation: gr-hl-pop .15s ease;
+  `
+
+  document.body.appendChild(popup)
+  grHighlightBtn = popup
+  setTimeout(() => popup.querySelector('#gr-hl-comment')?.focus(), 50)
+
+  popup.querySelector('#gr-hl-transform').addEventListener('click', async () => {
+    const selectedText = text
+    const comment      = popup.querySelector('#gr-hl-comment')?.value.trim() || ''
+    const pageTitle    = document.title.slice(0, 80)
+    const transformBtn = popup.querySelector('#gr-hl-transform')
+    transformBtn.textContent = t('content.highlightSaving', UI_LANG)
+    transformBtn.disabled = true
+
+    const combinedText = comment
+      ? `${selectedText}\n\n[${UI_LANG === 'en' ? 'My note' : 'Benim notum'}: ${comment}]`
+      : selectedText
+
+    const res = await chrome.runtime.sendMessage({
+      type:    MSG.TRANSFORM_HIGHLIGHT,
+      text:    combinedText,
+      url:     window.location.href,
+      title:   `${pageTitle} — ${UI_LANG === 'en' ? 'highlight' : 'seçili metin'}`,
+      comment,
+    }).catch(() => null)
+
+    popup.remove()
+    grHighlightBtn = null
+    selection.removeAllRanges()
+
+    if (!res?.ok) {
+      showHighlightToast(UI_LANG === 'en' ? 'Transform failed.' : 'Dönüşüm başarısız.', true)
+      return
+    }
+
+    showHighlightResult(res.loreText, res.leveledUp ? res.character?.level : null)
+  })
+})
+
+document.addEventListener('mousedown', (e) => {
+  if (!grHighlightBtn) return
+  if (!grHighlightBtn.contains(e.target)) {
+    grHighlightBtn.remove()
+    grHighlightBtn = null
+  }
+})
+
+function showHighlightToast(message, isError = false) {
+  document.getElementById('gr-hl-toast')?.remove()
+  const toast = document.createElement('div')
+  toast.id = 'gr-hl-toast'
+  toast.textContent = message
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${isError ? '#e24b4a' : '#534ab7'};
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: -apple-system, sans-serif;
+    font-size: 13px;
+    z-index: 2147483647;
+    animation: gr-hl-pop .2s ease;
+  `
+  document.body.appendChild(toast)
+  setTimeout(() => toast.remove(), 3000)
+}
+
+function showHighlightResult(loreText, newLevel) {
+  document.getElementById('gr-hl-result')?.remove()
+
+  const panel = document.createElement('div')
+  panel.id = 'gr-hl-result'
+  panel.innerHTML = `
+    <div class="gr-hl-result-inner">
+      <div class="gr-hl-result-eyebrow">✨ ${UI_LANG === 'en' ? 'Highlight saved to Grimoire (+50 XP)' : 'Seçili metin Grimoire\'a kaydedildi (+50 XP)'}</div>
+      ${newLevel ? `<div class="gr-hl-result-levelup">${UI_LANG === 'en' ? `Level ${newLevel}!` : `Seviye ${newLevel}!`}</div>` : ''}
+      <div class="gr-hl-result-text">${loreText.slice(0, 300)}${loreText.length > 300 ? '…' : ''}</div>
+      <button class="gr-hl-result-close" id="gr-hl-result-close">×</button>
+    </div>
+  `
+  document.body.appendChild(panel)
+  document.getElementById('gr-hl-result-close').addEventListener('click', () => panel.remove())
+  setTimeout(() => panel.remove(), 8000)
 }
 
 // ─── Memory Palace Quiz UI ────────────────────────────────────────────────

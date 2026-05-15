@@ -79,7 +79,8 @@ export default function Settings({ lang = 'tr' }) {
         loreStyle: 'fantasy',
         monsterDifficulty: 'normal',
         aiProvider: 'chrome',
-        apiKey: ''
+        apiKey: '',
+        customEndpoint: ''
       })
     })
     chrome.runtime.sendMessage({ type: 'CHECK_AI' }, (res) => {
@@ -113,7 +114,8 @@ export default function Settings({ lang = 'tr' }) {
           aiProvider: 'chrome',
           apiKey: '',
           appLanguage: 'tr',
-          customModel: ''
+          customModel: '',
+          customEndpoint: ''
         },
         world:      { entries: [], chronicle: '', lastChronicleUpdate: null },
         quizQueue:  [],
@@ -217,6 +219,33 @@ export default function Settings({ lang = 'tr' }) {
             {settings.aiProvider === 'grok' && <span>{t('settings.hintGrok', lang)}<br/></span>}
             {settings.aiProvider === 'gemini' && <span>{t('settings.hintGemini', lang)}<br/></span>}
             <span style={{ color: '#888780' }}>{t('settings.localWarn', lang)}</span>
+          </div>
+        </Section>
+      )}
+
+      {/* Özel Endpoint URL: SADECE CUSTOM */}
+      {settings.aiProvider === 'custom' && (
+        <Section title="Özel API Endpoint URL">
+          <input
+            type="text"
+            value={settings.customEndpoint || ''}
+            onChange={e => update('customEndpoint', e.target.value)}
+            placeholder="Örn: https://openrouter.ai/api/v1/chat/completions"
+            style={{
+              width: '100%',
+              padding: '8px 10px',
+              background: 'rgba(255,255,255,.04)',
+              border: '0.5px solid rgba(255,255,255,.12)',
+              borderRadius: 7,
+              color: '#e8e6d9',
+              fontSize: 12,
+              fontFamily: 'monospace',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <div style={{ fontSize: 11, color: '#888780', marginTop: 5 }}>
+            OpenRouter, LMStudio veya Ollama gibi OpenAI uyumlu URL'yi girin (Local API da olur).
           </div>
         </Section>
       )}
